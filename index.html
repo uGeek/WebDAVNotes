@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html>
+
+<!-- --------------------------------------------------------------------------------------    
+                   Cambia la ruta del archivo de los archivos 
+-------------------------------------------------------------------------------------------   
+   URL del HTML de edición de Notas            =  "../../../apps/notas/notas.html#"   
+   Ruta del directorios con archivos markdown  =  "../../../Notas/Notas/"             
+-------------------------------------------------------------------------------------------
+     WebDAVNotes v0.1.0 11/12/2023
+
+     MIT License
+     Copyright (c) 2023 Angel. uGeek
+     ugeekpodcast@gmail.com
+     https://ugeek.github.io
+-------------------------------------------------------------------------------------------->
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="notes.svg" type="image/x-icon">
+    <title>Notas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 2%;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"],
+        input[type="date"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #0074D9;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        #mensaje {
+            display: none;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table,
+        th,
+        td {
+            border: 1px solid #ddd;
+        }
+
+        th,
+        td {
+            padding: 10px;
+            text-align: left;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .exito-mensaje {
+            color: green;
+            font-weight: bold;
+        }
+
+        .palabras-especiales {
+            margin: 20px;
+        }
+
+        .palabras-especiales a {
+            text-decoration: none;
+            color: #008CBA;
+            margin-right: 10px;
+        }
+
+        .editar-input {
+            width: 100%;
+        }
+
+        .acciones-buttons {
+            display: flex;
+            flex-direction: column;
+        }
+
+
+        a:link {
+            color: #005fb3;
+            /* Cambiar el color del hipervínculo no visitado */
+            text-decoration: none;
+            /* Eliminar la línea debajo del hipervínculo no visitado */
+        }
+
+        a:visited {
+            color: #005fb3;
+            /* Cambiar el color del hipervínculo visitado */
+            text-decoration: none;
+            /* Eliminar la línea debajo del hipervínculo visitado */
+        }
+    </style>
+
+</head>
+
+<body>
+    <h1>Notas</h1>
+    <!-- Cuenta el numero de notas -->
+    <!-- Este script usa el método PROPFIND de webdav para obtener los nombres y las fechas de los archivos .md -->
+    <script>
+        // La url del directorio webdav
+        var webdavUrl2 = "../../../Notas/Notas/";
+        // La función que se ejecuta cuando se recibe la respuesta del servidor
+        function showFiles2(xml) {
+            // Selecciona todos los elementos <D:response> del xml
+            var webdavResponses2 = xml.getElementsByTagName("D:response");
+            // Crea un array vacío para almacenar los objetos con el nombre y la fecha de cada archivo
+            var webdavFiles2 = [];
+            // Recorre cada elemento
+            for (var i = 0; i < webdavResponses2.length; i++) {
+                // Obtiene el texto del elemento <D:href>
+                var href = webdavResponses2[i].getElementsByTagName("D:href")[0].textContent;
+                // Comprueba si el texto termina con .md
+                if (href.endsWith(".md")) {
+                    // Obtiene el texto del elemento <D:getlastmodified>
+                    var lastModified = webdavResponses2[i].getElementsByTagName("D:getlastmodified")[0].textContent;
+                    // Crea un objeto con el nombre y la fecha del archivo
+                    var file = { name: href, date: new Date(lastModified) };
+                    // Añade el objeto al array
+                    webdavFiles2.push(file);
+                }
+            }
+            // Muestra el número de archivos en el elemento <p> con id="count2"
+            document.getElementById("count2").textContent = "Hay " + webdavFiles2.length + " Notas en el directorio";
+
+            // Llama a la función showFiles para mostrar la lista de archivos
+            showFiles(xml);
+        }
+
+        // Crea un objeto XMLHttpRequest para enviar la petición al servidor
+        var xhr2 = new XMLHttpRequest();
+        // Abre la conexión con el método PROPFIND y la url del directorio
+        xhr2.open("PROPFIND", webdavUrl2);
+        // Establece el tipo de contenido de la petición como xml
+        xhr2.setRequestHeader("Content-Type", "text/xml");
+        // Establece la profundidad de la petición como 1 para obtener solo los archivos del directorio
+        xhr2.setRequestHeader("Depth", "1");
+        // Establece la función que se ejecuta cuando se recibe la respuesta del servidor
+        xhr2.onload = function () {
+            // Si el código de estado es 207 (Multi-Status)
+            if (xhr2.status == 207) {
+                // Parsea el texto de la respuesta como xml
+                var xml = new DOMParser().parseFromString(xhr2.responseText, "text/xml");
+                // Llama a la función showFiles2 con el xml
+                showFiles2(xml);
+            }
+        };
+        // Envía la petición al servidor con el cuerpo vacío
+        xhr2.send("");
+    </script>
+    <!-- Crea un elemento <p> con id="count2" para mostrar el número de archivos -->
+    <p id="count2"></p>
+    <!-- Fin de cuenta el numero de notas -->
+    <!-- Botón de actualizar página -->
+    <script>
+        // Aquí puedes poner tu código JavaScript
+        // Por ejemplo, puedes crear otro botón con jQuery
+        $("<button>Actualizar con jQuery</button>") // Crear un botón con jQuery
+            .appendTo("body") // Añadirlo al cuerpo del documento
+            .click(function () { // Asignarle una función al hacer clic
+                location.reload(); // Recargar la página
+            });
+    </script>
+    <!-- fin boton de actualizar pagina -->
+
+    <button onclick="location.reload()">Actualizar</button>
+    <a href="youtube.html"><button>YouTube</button></a>
+    <button onclick="window.close()">Cerrar</button>
+    <script>
+        function actualizarSeccion() {
+            fetch('datos_actualizados.html')
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById("seccion").innerHTML = data;
+                });
+        }
+    </script>
+    <!-- Agrega una caja de búsqueda -->
+    <div>
+        <input type="text" id="searchInput" placeholder="Filtrar Notas" oninput="filterFiles()">
+        <!-- Agregamos enlaces con palabras que al hacer clic insertan texto en la caja de búsqueda -->
+        <span><a href="javascript:void(0)" onclick="insertText('/')">/</a></span>
+        <span><a href="javascript:void(0)" onclick="insertText('pin')">pin</a></span>
+        <span><a href="javascript:void(0)" onclick="insertText('(A)')">(A)</a></span>
+        <span><a href="javascript:void(0)" onclick="insertText('(B)')">(B)</a></span>
+        <span><a href="javascript:void(0)" onclick="insertText('(C)')">(C)</a></span>
+        <span><a href="javascript:void(0)" onclick="insertText('(publicar)')">(publicar)</a></span>
+        <span><a href="javascript:void(0)" onclick="insertText('Desarrollo')">Desarrollo</a></span>
+        <br>
+        <hr>
+        <span><a href="javascript:void(0)" onclick="insertText('Android')">Android</a></span>
+        <span><a href="javascript:void(0)" onclick="insertText('app')">app</a></span>
+        <span><a href="javascript:void(0)" onclick="insertText('Brave')">Brave</a></span>
+        <span><a href="javascript:void(0)" onclick="insertText('Caddy')">Caddy</a></span>
+        <span><a href="javascript:void(0)" onclick="insertText('Docker')">Docker</a></span>
+        <span><a href="javascript:void(0)" onclick="insertText('Emacs')">Emacs</a></span>
+        <span><a href="javascript:void(0)" onclick="insertText('Firefox')">Firefox</a></span>
+        <span><a href="javascript:void(0)" onclick="insertText('IA')">IA</a></span>
+        <span><a href="javascript:void(0)" onclick="insertText('Manjaro')">Manjaro</a></span>
+        <span><a href="javascript:void(0)" onclick="insertText('rclone')">rclone</a></span>
+        <span><a href="javascript:void(0)" onclick="insertText('Telegram')">Telegram</a></span>
+        <span><a href="javascript:void(0)" onclick="insertText('Terminal')">Terminal</a></span>
+        <span><a href="javascript:void(0)" onclick="insertText('Termux')">Termux</a></span>
+        <span><a href="javascript:void(0)" onclick="insertText('Windows')">Windows</a></span>
+    </div>
+
+    <hr>
+
+
+
+    <ul id="fileList">
+        <!-- Este script usa el método PROPFIND de webdav para obtener los nombres y las fechas de los archivos .md -->
+        <script>
+            // La url del directorio webdav
+            var url = "../../../Notas/Notas/";
+            // La función que se ejecuta cuando se recibe la respuesta del servidor
+            function showFiles(xml) {
+                // Selecciona todos los elementos <D:response> del xml
+                var responses = xml.getElementsByTagName("D:response");
+                // Crea un array vacío para almacenar los objetos con el nombre y la fecha de cada archivo
+                var files = [];
+                // Recorre cada elemento
+                for (var i = 0; i < responses.length; i++) {
+                    // Obtiene el texto del elemento <D:href>
+                    var href = responses[i].getElementsByTagName("D:href")[0].textContent;
+                    // Decodifica la URL para reemplazar los caracteres codificados
+                    href = decodeURIComponent(href);
+                    // Comprueba si el texto termina con .md
+                    if (href.endsWith(".md")) {
+                        // Obtiene el texto del elemento <D:getlastmodified>
+                        var lastModified = responses[i].getElementsByTagName("D:getlastmodified")[0].textContent;
+                        // Crea un objeto con el nombre y la fecha del archivo
+                        var file = { name: href, date: new Date(lastModified) };
+                        // Añade el objeto al array
+                        files.push(file);
+                    }
+                }
+                // Ordena el array por la fecha de forma descendente
+                files.sort(function (a, b) {
+                    return b.date - a.date;
+                });
+                // Recorre el array ordenado
+                for (var i = 0; i < files.length; i++) {
+                    // Extrae el título del archivo desde la última barra ("/") hasta el final y elimina la extensión .md
+                    var fileName = files[i].name.substring(files[i].name.lastIndexOf("/") + 1).replace(".md", "");
+                    // Crea un elemento <li> con un enlace al archivo y la fecha de última modificación
+                    var li = document.createElement("li");
+                    var a = document.createElement("a");
+                    a.href = "#"; // Cambiado para evitar que la página se cargue al hacer clic
+                    a.textContent = fileName; // Muestra solo el título del archivo sin la extensión .md
+                    li.appendChild(a);
+                    li.appendChild(document.createTextNode(" - " + files[i].date.toLocaleString()));
+
+                    // Añade un evento onclick al elemento <a> para abrir una nueva pestaña con la URL deseada
+                    a.onclick = function (event) {
+                        // Evita que se ejecute el comportamiento por defecto del enlace (abrir la url en la misma ventana)
+                        event.preventDefault();
+                        // Obtiene el nombre del archivo sin la extensión .md
+                        var fileNameWithoutExtension = this.textContent.replace(".md", "");
+                        // Construye la URL con el nombre del archivo codificado
+                        var url = "../../../apps/notas/notas.html#" + encodeURIComponent(fileNameWithoutExtension);
+                        // Abre una nueva pestaña con la URL
+                        window.open(url, "_blank");
+                    };
+
+                    // Añade el elemento <li> a la lista <ul>
+                    document.querySelector("#fileList").appendChild(li);
+                }
+            }
+
+
+
+            // Función para insertar texto en la caja de búsqueda
+            function insertText(text) {
+                document.getElementById("searchBox").value = text;
+                filterFiles(); // Filtrar automáticamente al insertar texto
+            }
+
+            // Función para filtrar archivos en función de la búsqueda
+            function filterFiles() {
+                var searchTerm = document.getElementById("searchInput").value.toLowerCase();
+                var fileList = document.getElementById("fileList").getElementsByTagName("li");
+
+                for (var i = 0; i < fileList.length; i++) {
+                    var fileName = fileList[i].textContent.toLowerCase();
+                    if (fileName.includes(searchTerm)) {
+                        fileList[i].style.display = "block";
+                    } else {
+                        fileList[i].style.display = "none";
+                    }
+                }
+            }
+
+
+            // Función para insertar texto en la caja de búsqueda
+            function insertText(text) {
+                document.getElementById("searchInput").value = text;
+                filterFiles(); // Filtrar automáticamente al insertar texto
+            }
+        </script>
+    </ul>
+
+    <!-- Abrir URLS que no existen  -->
+    <script>
+        // ... (tu código existente) ...
+
+        // Función para filtrar archivos en función de la búsqueda
+        function filterFiles() {
+            var searchTerm = document.getElementById("searchInput").value.toLowerCase();
+            var fileList = document.getElementById("fileList").getElementsByTagName("li");
+
+            for (var i = 0; i < fileList.length; i++) {
+                var fileName = fileList[i].textContent.toLowerCase();
+                if (fileName.includes(searchTerm)) {
+                    fileList[i].style.display = "block";
+                } else {
+                    fileList[i].style.display = "none";
+                }
+            }
+        }
+
+        // Evento al presionar "Alt + Enter" en la caja de búsqueda
+        document.getElementById("searchInput").addEventListener("keydown", function (event) {
+            if (event.key === "Enter" && event.altKey) {
+                // Evitar que el evento "Enter" por defecto se propague
+                event.preventDefault();
+
+                // Obtiene el primer elemento visible en la lista
+                var firstVisibleItem = document.querySelector("#fileList li[style='display: block;']");
+                if (firstVisibleItem) {
+                    // Extrae el título del archivo desde el enlace y elimina la extensión .md
+                    var fileName = firstVisibleItem.querySelector("a").textContent.replace(".md", "");
+                    // Construye la URL con el nombre del archivo codificado y abre una nueva pestaña
+                    var url = "../../../apps/notas/notas.html#" + encodeURIComponent(fileName);
+                    window.open(url, "_blank");
+                }
+            }
+        });
+
+        // Evento al presionar "Ctrl + Enter" en la caja de búsqueda
+        document.getElementById("searchInput").addEventListener("keydown", function (event) {
+            if ((event.key === "Enter" && (event.ctrlKey || event.metaKey)) && !event.altKey) {
+                // Evitar que el evento "Enter" por defecto se propague
+                event.preventDefault();
+
+                // Obtiene el primer elemento visible en la lista
+                var firstVisibleItem = document.querySelector("#fileList li[style='display: block;']");
+                if (firstVisibleItem) {
+                    // Extrae el título del archivo desde el enlace y elimina la extensión .md
+                    var fileName = firstVisibleItem.querySelector("a").textContent.replace(".md", "");
+                    // Construye la URL con el nombre del archivo codificado y abre una nueva pestaña
+                    var url = "../../../apps/notas/notas.html#" + encodeURIComponent(fileName);
+                    window.open(url, "_blank");
+                }
+            }
+        });
+
+        // Evento al presionar "Enter" en la caja de búsqueda
+        document.getElementById("searchInput").addEventListener("keydown", function (event) {
+            if (event.key === "Enter" && !event.ctrlKey && !event.metaKey && !event.altKey) {
+                // Evitar que el evento "Enter" por defecto se propague
+                event.preventDefault();
+
+                // Obtiene el texto de la caja de búsqueda
+                var searchText = this.value.trim();
+                if (searchText !== "") {
+                    // Construye la URL con el texto codificado y abre una nueva pestaña
+                    var url = "../../../apps/notas/notas.html#" + encodeURIComponent(searchText);
+                    window.open(url, "_blank");
+                }
+            }
+        });
+
+
+    </script>
+    <script>
+        // ... Resto de tus funciones y scripts ...
+
+        // Event listener para la combinación de teclas Ctrl + U
+        document.addEventListener('keydown', function (event) {
+            // Verificar si se presionó la tecla 'U' y simultáneamente se presionó la tecla Ctrl (o Cmd en Mac)
+            if ((event.ctrlKey || event.metaKey) && event.key === 'u') {
+                // Evitar el comportamiento predeterminado del navegador (recargar la página)
+                event.preventDefault();
+
+                // Recargar la página
+                location.reload();
+            }
+        });
+    </script>
+
+
+
+    <script>
+        // Cerrar con el atajo Ctrl + q
+        // ... Resto de tus funciones y scripts ...
+
+        // Event listener para la combinación de teclas Ctrl + Q
+        document.addEventListener('keydown', function (event) {
+            // Verificar si se presionó la tecla 'Q' y simultáneamente se presionó la tecla Ctrl (o Cmd en Mac)
+            if ((event.ctrlKey || event.metaKey) && event.key === 'q') {
+                // Evitar el comportamiento predeterminado del navegador (cerrar la página)
+                event.preventDefault();
+
+                // Llamar a la función de cerrar página
+                closePage();
+            }
+        });
+    </script>
+
+    <script>
+        // ... Resto de tus funciones y scripts ...
+
+        // Event listener para la combinación de teclas Ctrl + Y
+        document.addEventListener('keydown', function (event) {
+            // Verificar si se presionó la tecla 'Y' y simultáneamente se presionó la tecla Ctrl (o Cmd en Mac)
+            if ((event.ctrlKey || event.metaKey) && event.key === 'y') {
+                // Evitar el comportamiento predeterminado del navegador (navegar hacia atrás)
+                event.preventDefault();
+
+                // Abrir la URL youtube.html
+                window.location.href = 'youtube.html';
+            }
+        });
+    </script>
+    <script>
+        // ... Definición de otras variables y funciones ...
+
+        // Definir la ruta de las notas en el servidor
+        var rutaNotasEnServidor = "../../Notas/Notas/";
+
+        // Event listener para la combinación de teclas Ctrl + H
+        document.addEventListener('keydown', function (event) {
+            // Verificar si se presionó la tecla 'H' y simultáneamente se presionó la tecla Ctrl (o Cmd en Mac)
+            if ((event.ctrlKey || event.metaKey) && event.key === 'h') {
+                // Evitar el comportamiento predeterminado del navegador (mostrar la ayuda)
+                event.preventDefault();
+
+                // Mostrar el mensaje de ayuda con la ruta de las notas en el servidor
+                alert(`WebDAVNotes\n--------------------------------------\nPresiona Ctrl+S para guardar\nPresiona Ctrl+Q para cerrar\nPresiona Ctrl+U para actualizar\nPresiona Ctrl+Y para añadir vídeos de YouTube\nPresiona Ctrl+H para obtener ayuda\n\nPresiona Alt+Enter o Ctrl+Enter  Abrir el primer resultado en una nueva pestaña\n\nPresiona Enter  Crea una nueva nota con el nombre introducido en la cajetilla de filtrado\n\n\nLa ruta de tus notas en el servidor es: ${rutaNotasEnServidor}\n\nCopyright (c) 2023 Angel. uGeek. v0.1.0 11/12/2023`);
+            }
+        });
+    </script>
+    <br>
+    <center><a href="https://github.com/uGeek/WebDAVNotes/">WebDAVNotes. &copy; 2023 Angel. uGeek</a></center>
+</body>
+</html>
