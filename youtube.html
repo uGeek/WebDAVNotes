@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<!-- --------------------------------------------------------------------------------------    
+                   Cambia la ruta del archivo de los archivos 
+-------------------------------------------------------------------------------------------   
+   Ruta del archivo donde van los vídeos de YouTube  =  ../../Notas/Notas/YouTube.md   
+   Es necesario tener la API de YouTube              =   var apiKey = 'PON AQUÍ TU API DE YOUTUBE';
+-------------------------------------------------------------------------------------------
+     WebDAVNotes v0.1.0 11/12/2023
+
+     MIT License
+     Copyright (c) 2023 Angel. uGeek
+     ugeekpodcast@gmail.com
+     https://ugeek.github.io
+-------------------------------------------------------------------------------------------->
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="notes.svg" type="image/x-icon">
+  <title>YouTube</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+
+    form {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    input[type="text"],
+    input[type="date"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: #0074D9;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+            a:link {
+            color: #005fb3;
+            /* Cambiar el color del hipervínculo no visitado */
+            text-decoration: none;
+            /* Eliminar la línea debajo del hipervínculo no visitado */
+        }
+
+        a:visited {
+            color: #005fb3;
+            /* Cambiar el color del hipervínculo visitado */
+            text-decoration: none;
+            /* Eliminar la línea debajo del hipervínculo visitado */
+        }
+  </style>
+</head>
+
+<body>
+
+
+  <!-- Agregar un botón para crear una nueva nota -->
+  <button onclick="location.reload()">Actualizar</button> <a href="index.html"><button>Index</button></a>
+  <form id="form" method="post">
+    <br><label for="url">Introduce la URL de YouTube:</label>
+    <br>
+    <input type="text" id="url" name="url" placeholder="URL" required>
+    <br>
+    <button type="submit" id="submit">Guardar URL</button>
+  </form>
+  <div id="result"></div>
+  <script>
+    // Obtener los elementos del formulario
+    var form = document.getElementById("form");
+    var url = document.getElementById("url");
+    var submit = document.getElementById("submit");
+    var result = document.getElementById("result");
+
+    // Añadir un evento al botón de enviar
+    submit.addEventListener("click", function (event) {
+      // Evitar que el formulario se envíe por defecto
+      event.preventDefault();
+      // Reemplaza 'TU_CLAVE_DE_API' con tu propia clave de API de YouTube
+      var apiKey = '--------- PON AQUÍ TU API DE YOUTUBE --------------';
+      var videoUrl = url.value;
+      var videoId = getYouTubeVideoId(videoUrl);
+
+      // Función para obtener el ID del video de YouTube desde la URL
+      function getYouTubeVideoId(url) {
+        var match = url.match(/[?&]v=([^&]+)/);
+        return match && match[1];
+      }
+
+      // Realizar una solicitud a la API de YouTube para obtener información del video
+      var youtubeApiUrl = 'https://www.googleapis.com/youtube/v3/videos?id=' + videoId + '&key=' + apiKey + '&part=snippet';
+      var xhttp3 = new XMLHttpRequest();
+      xhttp3.open('GET', youtubeApiUrl, true);
+      xhttp3.onreadystatechange = function () {
+        if (this.readyState == 4 && this.status == 200) {
+          var response = JSON.parse(this.responseText);
+          if (response.items && response.items.length > 0) {
+            var videoTitle = response.items[0].snippet.title;
+            var videoThumbnail = 'http://img.youtube.com/vi/' + videoId + '/0.jpg';
+            var contentToAdd = '\n## ' + videoTitle + '\n';
+            contentToAdd += '[![](' + videoThumbnail + ')](' + videoUrl + ' "")';
+
+            // Crear un objeto XMLHttpRequest para comunicarse con el servidor WebDAV
+            var xhttp = new XMLHttpRequest();
+            // Definir la dirección del servidor WebDAV y el archivo donde se guardarán las URLs
+            var webdavUrl = "../../Notas/Notas/YouTube.md";
+            // Abrir una conexión de tipo GET para leer el contenido del archivo
+            xhttp.open("GET", webdavUrl, true);
+            // Establecer el tipo de respuesta como texto
+            xhttp.responseType = "text";
+            // Definir una función que se ejecutará cuando la respuesta del servidor esté lista
+            xhttp.onreadystatechange = function () {
+              // Comprobar si la respuesta tiene el código 200, que significa que se ha leído el archivo
+              if (this.readyState == 4 && this.status == 200) {
+                // Obtener el contenido del archivo como texto
+                var content = this.responseText;
+                // Agregar el contenido a 'contentToAdd'
+                content += contentToAdd;
+                // Crear otro objeto XMLHttpRequest para enviar el contenido actualizado al servidor
+                var xhttp2 = new XMLHttpRequest();
+                // Abrir una conexión de tipo PUT para enviar datos al servidor
+                xhttp2.open("PUT", webdavUrl, true);
+                // Establecer el tipo de contenido como texto plano
+                xhttp2.setRequestHeader("Content-Type", "text/plain");
+                // Definir una función que se ejecutará cuando la respuesta del servidor esté lista
+                xhttp2.onreadystatechange = function () {
+                  // Comprobar si la respuesta tiene el código 201 o 204, que significa que se ha guardado el archivo
+                  if (this.readyState == 4 && (this.status == 201 || this.status == 204)) {
+                    // Modificar el mensaje de éxito en la página web con el título del video y estilo verde
+                    result.innerHTML = "<span style='color: green;'>El video de YouTube '" + videoTitle + "' se ha guardado correctamente.</span>";
+                  }
+
+
+                  // Comprobar si la respuesta tiene otro código, que significa que ha habido un error
+                  else if (this.readyState == 4) {
+                    // Mostrar un mensaje de error en la página web
+                    result.innerHTML = "Ha ocurrido un error al guardar la URL de YouTube.";
+                  }
+                };
+                // Enviar el contenido actualizado al servidor WebDAV
+                xhttp2.send(content);
+              }
+              // Comprobar si la respuesta tiene otro código, que significa que ha habido un error
+              else if (this.readyState == 4) {
+                // Mostrar un mensaje de error en la página web
+                result.innerHTML = "Ha ocurrido un error al leer el archivo .md.";
+              }
+            };
+            // Enviar la petición al servidor WebDAV
+            xhttp.send();
+
+            // Borrar la URL después de 5 segundos
+            setTimeout(function () {
+              url.value = ''; // Limpiar el contenido de la cajetilla de entrada de texto
+            }, 5000);
+          }
+        }
+      };
+      xhttp3.send();
+    });
+  </script>
+<br>
+<center><a href="https://github.com/uGeek/WebDAVNotes/">WebDAVNotes. &copy; 2023 Angel. uGeek</a></center>
+</body>
+</html>
