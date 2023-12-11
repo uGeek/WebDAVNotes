@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="es">
+<!-- --------------------------------------------------------------------------------------    
+                   Cambia la ruta del archivo de los archivos 
+-------------------------------------------------------------------------------------------   
+   Ruta del directorios con archivos markdown  =  "../../../Notas/Notas/"             
+-------------------------------------------------------------------------------------------
+     WebDAVNotes v0.1.0 11/12/2023
+
+     MIT License
+     Copyright (c) 2023 Angel. uGeek
+     ugeekpodcast@gmail.com
+     https://ugeek.github.io
+-------------------------------------------------------------------------------------------->
+
+<head>
+	<title id="fileTitle">Notas</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="icon" href="notes.svg" type="image/x-icon">
+	<!-- https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css -->
+	<link rel="stylesheet" href="simplemde.min.css">
+	<style>
+		button {
+			padding: 10px 20px;
+			background-color: #0074D9;
+			color: white;
+			border: none;
+			cursor: pointer;
+		}
+
+		.tab {
+			white-space: pre;
+			font-family: monospace;
+			position: relative;
+			display: none;
+			/* Ocultar el área de tabulado inicialmente */
+		}
+
+		.tab input {
+			width: 1em;
+			height: 1em;
+			outline: none;
+		}
+
+		.tab span {
+			cursor: pointer;
+			transform: translateY(-25%);
+		}
+
+		.editor-wrapper {
+			margin-top: 20px;
+		}
+
+		#markdown-editor {
+			width: 95%;
+			height: 80%;
+		}
+
+		/* Ajusta la altura de la caja de texto del editor */
+		#markdown-editor textarea {
+			height: 400px;
+			/* Ajusta este valor según tus necesidades */
+		}
+
+
+		/* Oculta el input por defecto */
+		#fileName {
+			display: none;
+		}
+
+
+		/* Nuevo estilo para centrar el pie de página */
+		#footer {
+			text-align: center;
+			margin-top: 20px;
+			font-size: 16px;
+			color: #333;
+		}
+
+		/* Estilo adicional para el formulario de renombrar */
+		#renameForm {
+			display: none;
+		}
+
+		a:link {
+			color: #005fb3;
+			/* Cambiar el color del hipervínculo no visitado */
+			text-decoration: none;
+			/* Eliminar la línea debajo del hipervínculo no visitado */
+		}
+
+		a:visited {
+			color: #005fb3;
+			/* Cambiar el color del hipervínculo visitado */
+			text-decoration: none;
+			/* Eliminar la línea debajo del hipervínculo visitado */
+		}
+	</style>
+	<!-- Añadir la barra en la parte inferior -->
+	<style>
+		.editor-wrapper {
+			position: relative;
+		}
+
+		#markdown-editor {
+			z-index: 0;
+			/* Ajusta el valor de z-index para que sea menor que el de la barra de herramientas */
+		}
+
+		.editor-toolbar {
+			position: absolute;
+			bottom: 0;
+			left: 0;
+			right: 0;
+			background-color: #f9f9f9;
+			/* Puedes ajustar el color de fondo según tus preferencias */
+			border-top: 1px solid #ddd;
+			/* Puedes ajustar el borde superior según tus preferencias */
+			padding: 5px;
+			z-index: 1;
+			/* Ajusta el valor de z-index según sea necesario */
+		}
+
+		.editor-toolbar .editor-toolbar-actions {
+			display: inline-block;
+		}
+
+		/* Desplaza la posición de la barra inferior un 50% más abajo */
+		.editor-toolbar {
+			bottom: -65px;
+		}
+	</style>
+</head>
+
+<body>
+	<button class='save-changes'>Guardar</button>
+
+	<button class='close' onclick="closePage()">Cerrar</button>
+
+	<script>
+		function closePage() {
+			window.close();
+		}
+	</script>
+
+
+	<!-- Botón de actualizar página -->
+	<script>
+		// Aquí puedes poner tu código JavaScript
+		// Por ejemplo, puedes crear otro botón con jQuery
+		$("<button>Actualizar con jQuery</button>") // Crear un botón con jQuery
+			.appendTo("body") // Añadirlo al cuerpo del documento
+			.click(function () { // Asignarle una función al hacer clic
+				location.reload(); // Recargar la página
+			});
+	</script>
+	<!-- fin boton de actualizar pagina -->
+
+	<button onclick="location.reload()">Actualizar</button>
+	<button class='save' onclick="showFileNameInput()">Nombre</button>
+	<input type="text" id="fileName" placeholder="Nombre Nota...">
+	<!-- Después del botón "Borrar" -->
+	<div class="editor-wrapper">
+		<textarea id="markdown-editor"></textarea>
+	</div>
+	<!-- https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js -->
+	<script src="simplemde.min.js"></script>
+	<script>
+		var editor = new SimpleMDE({
+			element: document.getElementById("markdown-editor"),
+			spellChecker: false,
+			forceSync: true,
+			renderingConfig: {
+				singleLineBreaks: false,
+				codeSyntaxHighlighting: true,
+			},
+			toolbar: [
+				"preview", "|", "heading", "heading-2", "heading-3", "code", "link", "image", "bold", "italic", "table", "|", "undo", "redo", "|", "side-by-side", "fullscreen",
+				{
+					name: "custom",
+					action: function (editor) {
+						// Función personalizada para insertar cajetillas de código
+						editor.codemirror.replaceSelection("``` bash\nTu código aquí\n```\n");
+					},
+					className: "fa fa-code", // Ícono de código
+					title: "Insertar cajetilla de código",
+				},
+
+
+				{
+					name: "custom",
+					action: function (editor) {
+						// Función personalizada para insertar cajetillas de código
+						editor.codemirror.replaceSelection("## Fuentes\n - \n");
+					},
+					className: "fa fa-code", // Ícono de código
+					title: "Añadir Fuentes",
+				},
+
+
+
+				// Función para añadir el título con el mismo nombre de la nota
+				{
+					name: "custom",
+					action: function (editor) {
+						// Obtener el nombre del archivo desde la URL después del símbolo #
+						var fileNameFromURL = window.location.hash.substring(1);
+
+						// Decodificar el nombre del archivo (reemplaza %20 con espacios en blanco)
+						fileNameFromURL = decodeURIComponent(fileNameFromURL.replace(/\+/g, ' '));
+
+						// Insertar "#" seguido del nombre del archivo en el editor
+						editor.codemirror.replaceSelection("# " + fileNameFromURL + "\n");
+					},
+					className: "fa fa-file", // Puedes ajustar el ícono según tus preferencias
+					title: "Insertar título con nombre de archivo",
+				},
+
+
+				// Función para añadir fecha y hora actual en el editor
+				{
+					name: "custom",
+					action: function (editor) {
+						// Función personalizada para insertar fecha y hora
+						var currentDate = new Date();
+						var formattedDate = formatDate(currentDate);
+						editor.codemirror.replaceSelection(formattedDate);
+					},
+					className: "fa fa-clock-o", // Ícono de reloj (puedes ajustarlo)
+					title: "Insertar fecha y hora",
+				}
+			],
+		});
+
+		// Función para añadir fecha y hora actual en el editor
+		function formatDate(date) {
+			var day = date.getDate();
+			var month = date.getMonth() + 1;
+			var year = date.getFullYear();
+			var hours = date.getHours();
+			var minutes = date.getMinutes();
+			var seconds = date.getSeconds();
+
+			// Asegurarse de que haya dos dígitos en el día, mes, minutos y segundos
+			day = day < 10 ? "0" + day : day;
+			month = month < 10 ? "0" + month : month;
+			minutes = minutes < 10 ? "0" + minutes : minutes;
+			seconds = seconds < 10 ? "0" + seconds : seconds;
+
+			var formattedDate = `${day}/${month}/${year}, ${hours}:${minutes}:${seconds}`;
+			return formattedDate;
+		}
+
+		// Función para actualizar el título y el h2 con el nombre de la nota
+		function updateTitle() {
+			console.log("updateTitle function called");
+			var fileName = document.getElementById("fileName").value.trim();
+			var title = fileName || "Notas";
+			document.title = title;
+			document.getElementById("fileTitleHeading").innerText = title;
+		}
+
+		// Función para actualizar el pie de página con el nombre del archivo
+		function updateFooter() {
+			var fileName = document.getElementById("fileName").value.trim();
+			document.getElementById("footer").innerText = `Editando: ${fileName}`;
+		}
+		// Función para mostrar el input fileName
+		function showFileNameInput() {
+			document.getElementById("fileName").style.display = "inline-block";
+			document.getElementById("fileName").focus();
+		}
+
+		// Cargar contenido desde el archivo especificado en la URL al iniciar la página
+		document.addEventListener("DOMContentLoaded", function () {
+			var fileNameFromURL = window.location.hash.substring(1); // Obtener el nombre del archivo desde la URL
+			if (fileNameFromURL) {
+				var decodedFileName = decodeURIComponent(fileNameFromURL.replace(/\+/g, ' '));
+				document.getElementById("fileTitle").innerText = decodedFileName;
+				fetch(`../../Notas/Notas/${decodedFileName}.md`)
+					.then(response => response.text())
+					.then(data => {
+						editor.value(data);
+						$tab.style.display = "block"; // Mostrar el área de tabulado después de cargar el archivo
+					})
+					.catch(error => console.error('Error al obtener el archivo:', error));
+			}
+		});
+
+		document.querySelector(".save").addEventListener("click", save);
+		document.querySelector(".save-changes").addEventListener("click", saveChanges);
+
+		function save() {
+			var fileName = document.getElementById("fileName").value.trim();
+
+			if (!fileName) {
+				alert("Por favor, ingrese un nombre de archivo.");
+				return;
+			}
+
+			// Agregar la extensión ".md" si no está presente
+			if (!fileName.endsWith(".md")) {
+				fileName += ".md";
+			}
+
+			fetch(`../../Notas/Notas/${fileName}`, {
+				method: 'PUT',
+				headers: {
+					'Content-Type': 'text/plain',
+				},
+				body: editor.value(),
+			})
+				.then(response => {
+					if (!response.ok) {
+						throw new Error(`¡Error HTTP! Estado: ${response.status}`);
+					}
+					alert(`Archivo "${fileName}" guardado exitosamente. \n\nSi deseas guardar la Nota con otro nombre y mantener esta, introduce el nuevo nombre`);
+				})
+				.catch(error => {
+					console.error('Error al guardar el archivo:', error);
+					alert('Error al guardar el archivo. Consulte la consola para obtener detalles.');
+				});
+		}
+
+		function saveChanges() {
+			var fileNameFromURL = window.location.hash.substring(1); // Obtener el nombre del archivo desde la URL
+
+			if (!fileNameFromURL) {
+				alert("No se ha especificado un nombre de archivo en la URL.");
+				return;
+			}
+
+			fetch(`../../Notas/Notas/${fileNameFromURL}.md`, {
+				method: 'PUT',
+				headers: {
+					'Content-Type': 'text/plain',
+				},
+				body: editor.value(),
+			})
+				.then(response => {
+					if (!response.ok) {
+						throw new Error(`¡Error HTTP! Estado: ${response.status}`);
+					}
+					alert(`Cambios en "${fileNameFromURL}.md" guardados exitosamente.`);
+				})
+				.catch(error => {
+					console.error('Error al guardar los cambios:', error);
+					alert('Error al guardar los cambios. Consulte la consola para obtener detalles.');
+				});
+		}
+
+		// Asociar la función updateTitle al evento de cambio en el input fileName
+		document.getElementById("fileName").addEventListener("input", updateTitle);
+	</script>
+
+	<!-- Dejar 3 saltos de línea, para la barra en la parte inferior -->
+	<br><br><br><br>
+	<button onclick="save()">Guardar</button> <!-- Nuevo botón de Guardar -->
+
+	<button class='close' onclick="closePage()">Cerrar</button>
+
+	<script>
+		function closePage() {
+
+			window.close();
+		}
+	</script>
+	<!-- Botón de actualizar página -->
+	<script>
+		// Aquí puedes poner tu código JavaScript
+		// Por ejemplo, puedes crear otro botón con jQuery
+		$("<button>Actualizar con jQuery</button>") // Crear un botón con jQuery
+			.appendTo("body") // Añadirlo al cuerpo del documento
+			.click(function () { // Asignarle una función al hacer clic
+				location.reload(); // Recargar la página
+			});
+	</script>
+	<!-- fin boton de actualizar pagina -->
+
+	<button onclick="location.reload()">Actualizar</button>
+	<!-- Después del área del editor de texto -->
+	<button class='delete' onclick="deleteFile()">Borrar</button>
+
+	<script>
+		function deleteFile() {
+			var fileNameFromURL = window.location.hash.substring(1);
+
+			if (!fileNameFromURL) {
+				alert("No se ha especificado un nombre de archivo en la URL.");
+				return;
+			}
+
+			if (confirm(`¿Estás seguro de que deseas borrar el archivo "${fileNameFromURL}"?`)) {
+				fetch(`../../Notas/Notas/${fileNameFromURL}.md`, {
+					method: 'DELETE',
+				})
+					.then(response => {
+						if (!response.ok) {
+							throw new Error(`¡Error HTTP! Estado: ${response.status}`);
+						}
+						alert(`Archivo "${fileNameFromURL}" borrado exitosamente.`);
+						// Redirigir a una página o hacer cualquier otra acción después de borrar el archivo
+					})
+					.catch(error => {
+						console.error('Error al borrar el archivo:', error);
+						alert('Error al borrar el archivo. Consulte la consola para obtener detalles.');
+					});
+			}
+		}
+	</script>
+	<!-- Después del botón "Borrar" -->
+
+
+
+
+	<button onclick="showRenameForm()">Renombrar</button>
+	<div id="renameForm">
+		<!-- Actualizado para mostrar el nombre actual sin la extensión .md -->
+		<input type="text" id="newFileName" placeholder="Nuevo Nombre..." value="">
+		<button onclick="renameFile()">Guardar Renombrar</button>
+	</div>
+
+	<script>
+		// ... Funciones y scripts existentes ...
+
+		// Función para mostrar el formulario de renombrar
+		function showRenameForm() {
+			// Obtener el nombre actual sin la extensión .md
+			var currentFileName = getCurrentFileName();
+
+			// Mostrar el formulario y actualizar la caja de entrada
+			document.getElementById("renameForm").style.display = "block";
+			document.getElementById("newFileName").value = currentFileName;
+
+			// Actualizar el pie de página con el nombre actual
+			updateFooter(currentFileName);
+		}
+
+		// Función para obtener el nombre actual sin la extensión .md
+		function getCurrentFileName() {
+			var fileName = document.getElementById("fileName").value.trim();
+			return fileName.endsWith(".md") ? fileName.slice(0, -3) : fileName;
+		}
+
+		// Función para actualizar el pie de página con el nombre actual
+		function updateFooter(fileName) {
+			document.getElementById("footer").innerText = `Editando: ${fileName}`;
+		}
+
+		// ... Otras funciones y eventos existentes ...
+	</script>
+
+	<script>
+		// ... Funciones y scripts existentes ...
+
+		// Función para renombrar el archivo
+		function renameFile() {
+			// Obtener el nombre actual y el nuevo nombre
+			var currentFileName = getCurrentFileName();
+			var newFileName = document.getElementById("newFileName").value.trim();
+
+			if (!newFileName) {
+				alert("Por favor, introduce un nuevo nombre válido.");
+				return;
+			}
+
+			// Agregar la extensión ".md" si no está presente en el nuevo nombre
+			if (!newFileName.endsWith(".md")) {
+				newFileName += ".md";
+			}
+
+			// Guardar el contenido en el nuevo archivo
+			fetch(`../../Notas/Notas/${newFileName}`, {
+				method: 'PUT',
+				headers: {
+					'Content-Type': 'text/plain',
+				},
+				body: editor.value(),
+			})
+				.then(response => {
+					if (!response.ok) {
+						throw new Error(`¡Error HTTP! Estado: ${response.status}`);
+					}
+					alert(`Archivo renombrado a "${newFileName}" y guardado exitosamente.`);
+
+					// Borrar el archivo con el nombre actual solo si el nombre cambió
+					if (currentFileName !== newFileName) {
+						deleteFile(currentFileName);
+					}
+
+					// Actualizar el nombre en el formulario y en el encabezado
+					document.getElementById("fileName").value = newFileName;
+					document.getElementById("fileTitle").innerText = newFileName;
+
+					// Ocultar el formulario
+					document.getElementById("renameForm").style.display = "none";
+				})
+				.catch(error => {
+					console.error('Error al renombrar y guardar el archivo:', error);
+					alert('Error al renombrar y guardar el archivo. Consulte la consola para obtener detalles.');
+				});
+		}
+
+		// ... Otras funciones y eventos existentes ...
+	</script>
+	<script>
+		// ... Funciones y scripts existentes ...
+
+		// Cargar contenido desde el archivo especificado en la URL al iniciar la página
+		document.addEventListener("DOMContentLoaded", function () {
+			// Obtener el nombre del archivo desde la URL
+			var fileNameFromURL = window.location.hash.substring(1);
+			if (fileNameFromURL) {
+				// Decodificar el nombre del archivo y actualizar el título
+				var decodedFileName = decodeURIComponent(fileNameFromURL.replace(/\+/g, ' '));
+				document.getElementById("fileTitle").innerText = decodedFileName;
+
+				// Actualizar el nombre del archivo en la caja de entrada y el pie de página
+				document.getElementById("fileName").value = decodedFileName;
+				document.getElementById("footer").innerText = `Editando: ${decodedFileName}`;
+
+				// Cargar el contenido del archivo
+				fetch(`../../Notas/Notas/${decodedFileName}.md`)
+					.then(response => response.text())
+					.then(data => {
+						editor.value(data);
+						$tab.style.display = "block"; // Mostrar el área de tabulado después de cargar el archivo
+					})
+					.catch(error => console.error('Error al obtener el archivo:', error));
+			}
+		});
+
+		// ... Otras funciones y eventos existentes ...
+	</script>
+
+
+	<!-- ... Resto del código ... -->
+
+	<!-- Nuevo script para la función save() -->
+	<script>
+		// Función para guardar el archivo
+		function save() {
+			var fileName = document.getElementById("fileName").value.trim();
+
+			if (!fileName) {
+				alert("Por favor, ingrese un nombre de archivo.");
+				return;
+			}
+
+			// Agregar la extensión ".md" si no está presente
+			if (!fileName.endsWith(".md")) {
+				fileName += ".md";
+			}
+
+			fetch(`../../Notas/Notas/${fileName}`, {
+				method: 'PUT',
+				headers: {
+					'Content-Type': 'text/plain',
+				},
+				body: editor.value(),
+			})
+				.then(response => {
+					if (!response.ok) {
+						throw new Error(`¡Error HTTP! Estado: ${response.status}`);
+					}
+					alert(`Archivo "${fileName}" guardado exitosamente.`);
+				})
+				.catch(error => {
+					console.error('Error al guardar el archivo:', error);
+					alert('Error al guardar el archivo. Consulte la consola para obtener detalles.');
+				});
+		}
+	</script>
+
+
+
+	<div style="text-align: center; margin-top: 20px; font-size: 16px; color: #333;">
+		Editando: <b><span id="currentNoteTitle">Nombre de la Nota</span><b>
+	</div>
+
+	<!-- ... Resto del código ... -->
+
+	<script>
+		// Obtener la parte de la URL después del símbolo #
+		var urlFragment = window.location.hash.substring(1);
+
+		// Verificar si hay una parte de la URL después del símbolo #
+		if (urlFragment) {
+			// Decodificar la parte de la URL y actualizar el contenido del span
+			document.getElementById("currentNoteTitle").innerText = decodeURIComponent(urlFragment.replace(/\+/g, ' '));
+		}
+	</script>
+
+	<script>
+		// Atajo para guardar la nota con Ctrl+s
+		// ... Resto de tus funciones y scripts ...
+
+		// Event listener para la combinación de teclas Ctrl + S
+		document.addEventListener('keydown', function (event) {
+			// Verificar si se presionó la tecla 'S' y simultáneamente se presionó la tecla Ctrl (o Cmd en Mac)
+			if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+				// Evitar el comportamiento predeterminado del navegador (guardar la página)
+				event.preventDefault();
+
+				// Llamar a la función de guardado
+				save();
+			}
+		});
+	</script>
+
+	<script>
+		// Cerrar con el atajo Ctrl + q
+		// ... Resto de tus funciones y scripts ...
+
+		// Event listener para la combinación de teclas Ctrl + Q
+		document.addEventListener('keydown', function (event) {
+			// Verificar si se presionó la tecla 'Q' y simultáneamente se presionó la tecla Ctrl (o Cmd en Mac)
+			if ((event.ctrlKey || event.metaKey) && event.key === 'q') {
+				// Evitar el comportamiento predeterminado del navegador (cerrar la página)
+				event.preventDefault();
+
+				// Llamar a la función de cerrar página
+				closePage();
+			}
+		});
+	</script>
+	<script>
+		// ... Resto de tus funciones y scripts ...
+
+		// Event listener para la combinación de teclas Ctrl + U
+		document.addEventListener('keydown', function (event) {
+			// Verificar si se presionó la tecla 'U' y simultáneamente se presionó la tecla Ctrl (o Cmd en Mac)
+			if ((event.ctrlKey || event.metaKey) && event.key === 'u') {
+				// Evitar el comportamiento predeterminado del navegador (recargar la página)
+				event.preventDefault();
+
+				// Recargar la página
+				location.reload();
+			}
+		});
+	</script>
+
+	<script>
+		// ... Resto de tus funciones y scripts ...
+
+		// Event listener para la combinación de teclas Ctrl + Y
+		document.addEventListener('keydown', function (event) {
+			// Verificar si se presionó la tecla 'Y' y simultáneamente se presionó la tecla Ctrl (o Cmd en Mac)
+			if ((event.ctrlKey || event.metaKey) && event.key === 'y') {
+				// Evitar el comportamiento predeterminado del navegador (navegar hacia atrás)
+				event.preventDefault();
+
+				// Abrir la URL youtube.html
+				window.location.href = 'youtube.html';
+			}
+		});
+	</script>
+
+
+	<script>
+		// Función para manejar el atajo de teclado Ctrl+Arriba
+		function handleShortcut(event) {
+			// Verificar si se presionó la tecla Ctrl y la tecla de flecha hacia arriba simultáneamente
+			if (event.ctrlKey && event.key === 'ArrowUp') {
+				// Subir al principio de la página
+				window.scrollTo({
+					top: 0,
+					behavior: 'smooth' // Puedes ajustar el comportamiento del desplazamiento
+				});
+
+				// Evitar el comportamiento predeterminado del navegador
+				event.preventDefault();
+			}
+		}
+
+		// Agregar un event listener al documento para manejar el atajo de teclado
+		document.addEventListener('keydown', handleShortcut);
+	</script>
+
+	<script>
+		// Función para manejar el atajo de teclado Ctrl+Abajo
+		function handleShortcut(event) {
+			// Verificar si se presionó la tecla Ctrl y la tecla de flecha hacia abajo simultáneamente
+			if (event.ctrlKey && event.key === 'ArrowDown') {
+				// Descender al final de la página
+				window.scrollTo({
+					top: document.body.scrollHeight,
+					behavior: 'smooth' // Puedes ajustar el comportamiento del desplazamiento
+				});
+
+				// Evitar el comportamiento predeterminado del navegador
+				event.preventDefault();
+			}
+		}
+
+		// Agregar un event listener al documento para manejar el atajo de teclado
+		document.addEventListener('keydown', handleShortcut);
+	</script>
+
+	<script>
+		// Función para manejar el atajo de teclado Ctrl+Derecha
+		function handleShortcut(event) {
+			// Verificar si se presionó la tecla Ctrl y la tecla de flecha hacia la derecha simultáneamente
+			if (event.ctrlKey && event.key === 'ArrowRight') {
+				// Obtener la selección del navegador
+				var selection = window.getSelection();
+
+				// Verificar si hay algún rango seleccionado
+				if (selection.rangeCount > 0) {
+					// Obtener el rango actual
+					var range = selection.getRangeAt(0);
+
+					// Obtener la posición del final del rango
+					var endOffset = range.endOffset;
+
+					// Descender al final del rango
+					window.scrollTo({
+						top: getOffsetTop(range.endContainer) + endOffset * 16, // Ajusta el factor según el tamaño de la fuente
+						behavior: 'smooth' // Puedes ajustar el comportamiento del desplazamiento
+					});
+
+					// Evitar el comportamiento predeterminado del navegador
+					event.preventDefault();
+				}
+			}
+		}
+
+		// Agregar un event listener al documento para manejar el atajo de teclado
+		document.addEventListener('keydown', handleShortcut);
+
+		// Función para obtener la posición superior de un elemento
+		function getOffsetTop(element) {
+			var offsetTop = 0;
+			while (element) {
+				offsetTop += element.offsetTop;
+				element = element.offsetParent;
+			}
+			return offsetTop;
+		}
+	</script>
+
+
+	<script>
+		// ... Definición de otras variables y funciones ...
+
+		// Definir la ruta de las notas en el servidor
+		var rutaNotasEnServidor = "../../Notas/Notas/";
+
+		// Event listener para la combinación de teclas Ctrl + H
+		document.addEventListener('keydown', function (event) {
+			// Verificar si se presionó la tecla 'H' y simultáneamente se presionó la tecla Ctrl (o Cmd en Mac)
+			if ((event.ctrlKey || event.metaKey) && event.key === 'h') {
+				// Evitar el comportamiento predeterminado del navegador (mostrar la ayuda)
+				event.preventDefault();
+
+				// Mostrar el mensaje de ayuda con la ruta de las notas en el servidor
+				alert(`WebDAVNotes\n--------------------------------------\nPresiona Ctrl+S para guardar\nPresiona Ctrl+Q para cerrar\nPresiona Ctrl+U para actualizar\nPresiona Ctrl+Y para añadir vídeos de YouTube\nPresiona Ctrl+Arriba para ir al principio\nPresiona Ctrl+Abajo para ir al final de la pagina\nPresiona Ctrl+Derecha para ir donde está el coursor\nPresiona Ctrl+H para obtener ayuda\n\nSintaxis Markdown\n--------------------------------------\nCtrl+p    previsualización\nCtrl+b    Negrita\nCtrl+i    Cursiva\nCtrl+Alt+C      Code\nCtrl+Alt+i       añadir imagen\nCtrl+Alt+k      añadir enlaces\n\nF9      2 Ventanas\nF11     Pantalla Completa\n\nLa ruta de tus notas en el servidor es: ${rutaNotasEnServidor}\n\nCopyright (c) 2023 Angel. uGeek. v0.1.0 11/12/2023`);
+			}
+		});
+	</script>
+	<br>
+	<center><a href="https://github.com/uGeek/WebDAVNotes/">WebDAVNotes. &copy; 2023 Angel. uGeek</a></center>
+</body>
+
+</html>
